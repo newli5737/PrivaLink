@@ -1,0 +1,95 @@
+@startuml
+skinparam backgroundColor #f8f9fa
+skinparam shadowing false
+skinparam noteBackgroundColor #fff3cd
+skinparam noteBorderColor #ffeaa7
+skinparam ArrowColor #495057
+skinparam ActorBackgroundColor #e9ecef
+skinparam ActorBorderColor #6c757d
+
+title Quy trình thẩm định chất lượng và nghiệm thu bàn giao dự án phần mềm (UAT Workflow)\n//Quy trình 3 giai đoạn đối soát kỹ thuật → Quyết định nghiệm thu//
+
+start
+
+:Khách hàng tiếp nhận hồ sơ thiết kế & sản phẩm phần mềm;
+
+partition "Giai đoạn 1: Thẩm định hồ sơ thiết kế ban đầu" #d1ecf1 {
+    if (Đầy đủ 15 tài liệu thiết kế,\nđặc tả kiến trúc, API và SRS chuẩn hóa?) then (Đạt chuẩn A)
+        :Trạng thái tài liệu: Đạt mức A;
+    elseif (Tài liệu đầy đủ,\nchỉ có vài góp ý nhỏ về format?) then (Đạt mức B)
+        :Trạng thái tài liệu: Đạt mức B;
+    elseif (Thiếu một số sơ đồ phụ trợ,\ncần bổ sung?) then (Đạt mức C)
+        :Trạng thái tài liệu: Đạt mức C;
+    else (Không đạt)
+        :Trạng thái tài liệu: Mức D;
+        ->[Từ chối nghiệm thu];
+        :TỪ CHỐI NGHIỆM THU (Yêu cầu làm lại hồ sơ);
+        detach
+    endif
+}
+
+partition "Giai đoạn 2: Đánh giá kiến trúc kỹ thuật & An toàn bảo mật" #d4edda {
+    if (Trạng thái == Mức A) then (đúng)
+        if (Mã hóa bcrypt an toàn, xác thực JWT,\nphân tầng Client-Server chuẩn mực?) then (Đạt)
+            :Chuyển tiếp sang thử nghiệm thực tế;
+        else (Cần bổ sung)
+            :Yêu cầu tối ưu bảo mật trước khi bàn giao;
+        endif
+    elseif (Trạng thái == Mức B) then (đúng)
+        if (Kiến trúc chuẩn, phản hồi API ổn định,\ntrực quan qua Swagger UI?) then (Đạt)
+            :Chuyển tiếp sang thử nghiệm thực tế;
+        else (Cần bổ sung)
+            :Cho phép thử nghiệm có điều kiện;
+        endif
+    elseif (Trạng thái == Mức C) then (đúng)
+        if (Có rủi ro bảo mật hoặc lỗi kiến trúc?) then (Có rủi ro)
+            :Yêu cầu khắc phục trong 03 ngày;
+        else (Lỗi nghiêm trọng)
+            ->[Tạm dừng nghiệm thu];
+            :TẠM DỪNG BÀN GIAO (Khắc phục lỗi bảo mật);
+            detach
+        endif
+    endif
+}
+
+partition "Giai đoạn 3: Kiểm thử chấp nhận thực tế (UAT Checklist 16 bước)" #fff3cd {
+    :Khách hàng thực thi kịch bản kiểm thử 16 bước trên mạng LAN;
+    
+    if (Mức A + Vượt qua kiểm tra kiến trúc) then (đúng)
+        if (Hoàn thành 16/16 bước kiểm thử,\nđộ trễ <100ms, tự dò tìm IP thành công?) then (Hoàn thành 100%)
+            :CẤP ĐỘ 1: NGHIỆM THU TOÀN DIỆN (APPROVED);
+        elseif (Đạt 14-15 bước, có lưu ý nhỏ?) then (Đạt trên 85%)
+            :CẤP ĐỘ 2: NGHIỆM THU CÓ ĐIỀU KIỆN;
+        else (Dưới 85%)
+            :CẤP ĐỘ 3: CHƯA ĐẠT CHUẨN BÀN GIAO;
+        endif
+    elseif (Mức B + Vượt qua kiểm tra kiến trúc) then (đúng)
+        if (Thực thi tốt các chức năng cốt lõi,\ngửi nhận tin nhắn và ảnh ổn định?) then (Đạt)
+            :CẤP ĐỘ 2: NGHIỆM THU CÓ ĐIỀU KIỆN;
+        elseif (Có lỗi phát sinh nhưng không nghiêm trọng?) then (Cần vá lỗi)
+            :CẤP ĐỘ 3: CHƯA ĐẠT CHUẨN BÀN GIAO;
+        else (Không đạt)
+            :TỪ CHỐI NGHIỆM THU;
+        endif
+    elseif (Mức C) then (đúng)
+        if (Hệ thống chạy được nhưng cần hoàn thiện?) then (Có thể nâng cấp)
+            :CẤP ĐỘ 3: CHƯA ĐẠT CHUẨN BÀN GIAO;
+        else (Không đạt)
+            :TỪ CHỐI NGHIỆM THU;
+        endif
+    endif
+}
+
+:Hai bên ký kết Biên bản nghiệm thu và bàn giao dự án;
+
+note right
+    <b>TIÊU CHUẨN NGHIỆM THU DỰ ÁN:</b>
+    <color:green>Cấp độ 1</color> - Nghiệm thu toàn diện (Hệ thống sẵn sàng vận hành 100%)
+    <color:blue>Cấp độ 2</color> - Nghiệm thu có điều kiện (Bổ sung ghi chú trong 03 ngày)
+    <color:orange>Cấp độ 3</color> - Hoàn thiện lại (Tổ chức phiên UAT tiếp theo)
+    <color:red>Từ chối</color> - Không đạt yêu cầu chất lượng
+end note
+
+stop
+
+@enduml
